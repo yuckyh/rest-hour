@@ -4,12 +4,6 @@ Description: |
   rest-hour
   Sample SAM Template for rest-hour
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Timeout: 3
-    MemorySize: 128
-
 Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -19,6 +13,8 @@ Resources:
       CodeUri: ./rust_backend # Points to dir of Cargo.toml
       Handler: bootstrap # Do not change, as this is the default executable name produced by Cargo Lambda
       Runtime: provided.al2023
+      MemorySize: 128
+      Timeout: 3
       Architectures:
         - x86_64
       Events:
