@@ -35,7 +35,7 @@ Resources:
     Metadata:
       BuildMethod: rust-cargolambda
     Properties:
-      CodeUri: ./rust_backend/hotels/get-hotels
+      CodeUri: ./packages/api/hotels/get-hotels
       Events:
         RestHourApiGEThotels:
           Type: Api
@@ -50,7 +50,7 @@ Resources:
     Metadata:
       BuildMethod: rust-cargolambda
     Properties:
-      CodeUri: ./rust_backend/hotel/get-hotel
+      CodeUri: ./packages/api/hotel/get-hotel
       Events:
         RestHourApiGEThotel:
           Type: Api
@@ -65,7 +65,7 @@ Resources:
     Metadata:
       BuildMethod: rust-cargolambda
     Properties:
-      CodeUri: ./rust_backend/hotel/post-hotel
+      CodeUri: ./packages/api/hotel/post-hotel
       Events:
         RestHourApiPOSThotel:
           Type: Api
@@ -80,7 +80,7 @@ Resources:
     Metadata:
       BuildMethod: rust-cargolambda
     Properties:
-      CodeUri: ./rust_backend/hotel/put-hotel
+      CodeUri: ./packages/api/hotel/put-hotel
       Events:
         RestHourApiPUThotel:
           Type: Api
@@ -95,7 +95,7 @@ Resources:
     Metadata:
       BuildMethod: rust-cargolambda
     Properties:
-      CodeUri: ./rust_backend/hotel/delete-hotel
+      CodeUri: ./packages/api/hotel/delete-hotel
       Events:
         RestHourApiDELETEhotel:
           Type: Api
