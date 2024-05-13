@@ -1,39 +1,246 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: |
   rest-hour
   Sample SAM Template for rest-hour
 
+Globals:
+  Function:
+    MemorySize: 128
+    Handler: bootstrap
+    Runtime: provided.al2023
+    Timeout: 3
+    Tracing: Active
+
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Metadata:
-      BuildMethod: rust-cargolambda # More info about Cargo Lambda: https://github.com/cargo-lambda/cargo-lambda
+  HotelsTable:
+    Type: AWS::DynamoDB::Table
     Properties:
-      CodeUri: ./rust_backend # Points to dir of Cargo.toml
-      Handler: bootstrap # Do not change, as this is the default executable name produced by Cargo Lambda
-      Runtime: provided.al2023
-      MemorySize: 128
-      Timeout: 3
-      Architectures:
-        - x86_64
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+
+  GetHotelsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: GetHotelsFunction
+      CodeUri: ./rust_backend/hotels/get-hotels
       Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        RestHourApiGEThotels:
+          Type: Api
           Properties:
-            Path: /hello
-            Method: get
+            Path: /hotels
+            Method: GET
+            RestApiId: !Ref RestHourApi
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HotelsTable
+  GetHotelFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: GetHotelFunction
+      CodeUri: ./rust_backend/hotel/get-hotel
+      Events:
+        RestHourApiGEThotel:
+          Type: Api
+          Properties:
+            Path: /hotel
+            Method: GET
+            RestApiId: !Ref RestHourApi
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HotelsTable
+  PostHotelFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: PostHotelFunction
+      CodeUri: ./rust_backend/hotel/post-hotel
+      Events:
+        RestHourApiPOSThotel:
+          Type: Api
+          Properties:
+            Path: /hotel
+            Method: POST
+            RestApiId: !Ref RestHourApi
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME_2: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN_2: !GetAtt HotelsTable.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HotelsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HotelsTable
+  PutHotelFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: PutHotelFunction
+      CodeUri: ./rust_backend/hotel/put-hotel
+      Events:
+        RestHourApiPUThotel:
+          Type: Api
+          Properties:
+            Path: /hotel
+            Method: PUT
+            RestApiId: !Ref RestHourApi
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HotelsTable
+  DeleteHotelFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: DeleteHotelFunction
+      CodeUri: ./rust_backend/hotel/delete-hotel
+      Events:
+        RestHourApiDELETEhotel:
+          Type: Api
+          Properties:
+            Path: /hotel
+            Method: DELETE
+            RestApiId: !Ref RestHourApi
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HotelsTable
+
+  GetHotelsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetHotelsFunction}
+  GetHotelFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GetHotelFunction}
+  PostHotelFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PostHotelFunction}
+  PutHotelFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PutHotelFunction}
+  DeleteHotelFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${DeleteHotelFunction}
+
+  RestHourApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${AWS::StackName}
+        - ResourceName: RestHourApi
+      StageName: Prod
+      DefinitionBody:
+        openapi: "3.0"
+        info: {}
+        paths:
+          /hotels:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetHotelsFunction.Arn}/invocations
+              responses: {}
+          /hotel:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetHotelFunction.Arn}/invocations
+              responses: {}
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostHotelFunction.Arn}/invocations
+              responses: {}
+            put:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PutHotelFunction.Arn}/invocations
+              responses: {}
+            delete:
+              responses: {}
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      Cors:
+        MaxAge: 5
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
+  RestHourApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
-    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/
-  HelloWorldFunction:
+    Value: !Sub https://${RestHourApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/rest-hour/
+  PutHotelFunction:
     Description: Hello World Lambda Function ARN
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
+    Value: !GetAtt PutHotelFunction.Arn
+  PutHotelFunctionIamRole:
     Description: Implicit IAM Role created for Hello World function
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+    Value: !GetAtt PutHotelFunctionRole.Arn
+Metadata:
+  AWS::Composer::Groups:
+    Group:
+      Label: Hotel Microservice
+      Members:
+        - GetHotelsFunction
+        - GetHotelFunction
+        - PostHotelFunction
+        - PutHotelFunction
+        - HotelsTable
+        - DeleteHotelFunction
