@@ -11,10 +11,6 @@ Globals:
     Runtime: provided.al2023
     Timeout: 3
     Tracing: Active
-    Environment:
-      Variables:
-        HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
-        HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
 
 Resources:
   HotelsTable:
@@ -37,14 +33,20 @@ Resources:
     Properties:
       CodeUri: ./packages/api/hotels/get-hotels
       Events:
-        RestHourApiGEThotels:
+        ApiGEThotels:
           Type: Api
           Properties:
             Path: /hotels
             Method: GET
+            RestApiId: !Ref Api
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref HotelsTable
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+          USERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref UserPoolClient
   GetHotelFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -52,14 +54,20 @@ Resources:
     Properties:
       CodeUri: ./packages/api/hotel/get-hotel
       Events:
-        RestHourApiGEThotel:
+        ApiGEThotel:
           Type: Api
           Properties:
             Path: /hotel
             Method: GET
+            RestApiId: !Ref Api
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref HotelsTable
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+          USERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref UserPoolClient
   PostHotelFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -67,14 +75,20 @@ Resources:
     Properties:
       CodeUri: ./packages/api/hotel/post-hotel
       Events:
-        RestHourApiPOSThotel:
+        ApiPOSThotel:
           Type: Api
           Properties:
             Path: /hotel
             Method: POST
+            RestApiId: !Ref Api
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref HotelsTable
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+          USERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref UserPoolClient
   PutHotelFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -82,14 +96,20 @@ Resources:
     Properties:
       CodeUri: ./packages/api/hotel/put-hotel
       Events:
-        RestHourApiPUThotel:
+        ApiPUThotel:
           Type: Api
           Properties:
             Path: /hotel
             Method: PUT
+            RestApiId: !Ref Api
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref HotelsTable
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+          USERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref UserPoolClient
   DeleteHotelFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -97,22 +117,90 @@ Resources:
     Properties:
       CodeUri: ./packages/api/hotel/delete-hotel
       Events:
-        RestHourApiDELETEhotel:
+        ApiDELETEhotel:
           Type: Api
           Properties:
             Path: /hotel
             Method: DELETE
+            RestApiId: !Ref Api
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref HotelsTable
+      Environment:
+        Variables:
+          HOTELSTABLE_TABLE_NAME: !Ref HotelsTable
+          HOTELSTABLE_TABLE_ARN: !GetAtt HotelsTable.Arn
+          USERPOOLCLIENT_USER_POOL_CLIENT_ID: !Ref UserPoolClient
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+        - email
+        - preferred_username
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+      AutoVerifiedAttributes:
+        - email
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${AWS::StackName}
+        - ResourceName: Api
+      StageName: Prod
+      DefinitionBody:
+        openapi: '3.0'
+        info: {}
+        paths:
+          /hotels:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetHotelsFunction.Arn}/invocations
+              responses: {}
+          /hotel:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetHotelFunction.Arn}/invocations
+              responses: {}
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostHotelFunction.Arn}/invocations
+              responses: {}
+            put:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PutHotelFunction.Arn}/invocations
+              responses: {}
+            delete:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteHotelFunction.Arn}/invocations
+              responses: {}
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      Cors:
+        MaxAge: 5
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  RestHourApi:
+  Api:
     Description: API Gateway endpoint URL for Prod stage for Rest Hour API
-    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/rest-hour/
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/rest-hour/
   GetHotelsFunction:
     Description: Get Hotels Lambda Function ARN
     Value: !GetAtt GetHotelsFunction.Arn
@@ -128,6 +216,9 @@ Outputs:
   DeleteHotelFunction:
     Description: Delete Hotel Lambda Function ARN
     Value: !GetAtt DeleteHotelFunction.Arn
+  HotelsTable:
+    Description: Hotels DynamoDB Table ARN
+    Value: !GetAtt HotelsTable.Arn
 
 Metadata:
   AWS::Composer::Groups:
